@@ -70,7 +70,7 @@ flutter run
 
 ## 5. Workflow de desarrollo (Feature-Based)
 
-Se trabaja con ramas por funcionalidad para mantener orden y evitar conflictos.
+Se trabaja con ramas por funcionalidad para mantener orden y control.
 
 ### Ramas principales
 
@@ -131,27 +131,32 @@ git push
 Formato:
 
 ```bash
-tipo(scope): mensaje
+tipo:nombre/mensaje
 ```
 
 Ejemplo:
 
 ```bash
-git commit -m "feat(api): registrar lectura de medidor"
+git commit -m "feat:dev1/registro de lectura de medidor"
 ```
 
 ---
 
 ### Tipos de commit
 
-| Tipo     | Uso                                       | Ejemplo de mensaje                           | Comando ejemplo                                     |
-| -------- | ----------------------------------------- | -------------------------------------------- | --------------------------------------------------- |
-| feat     | Nueva funcionalidad                       | feat(api): registrar lectura                 | git commit -m "feat(api): registrar lectura"        |
-| fix      | Corrección de errores                     | fix(api): error en cálculo de deuda          | git commit -m "fix(api): error en cálculo de deuda" |
-| refactor | Mejora interna sin cambiar comportamiento | refactor(api): separar lógica de facturación | git commit -m "refactor(api): separar lógica"       |
-| docs     | Documentación                             | docs: actualizar README                      | git commit -m "docs: actualizar README"             |
-| chore    | Configuración o tareas técnicas           | chore: configurar conexión BD                | git commit -m "chore: configurar conexión BD"       |
-| test     | Pruebas                                   | test(api): pruebas de cálculo                | git commit -m "test(api): pruebas de cálculo"       |
+| Tipo     | Uso                                       | Ejemplo de mensaje                          | Comando ejemplo                                         |
+| -------- | ----------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| feat     | Nueva funcionalidad                       | feat:dev1/registro de lectura               | git commit -m "feat:dev1/registro de lectura"           |
+| fix      | Corrección de errores                     | fix:dev2/error en cálculo de deuda          | git commit -m "fix:dev2/error en cálculo de deuda"      |
+| refactor | Mejora interna sin cambiar comportamiento | refactor:dev1/separar lógica de facturación | git commit -m "refactor:dev1/separar lógica"            |
+| docs     | Cambios en documentación                  | docs:team/actualizar README                 | git commit -m "docs:team/actualizar README"             |
+| chore    | Tareas técnicas, configuración            | chore:devops/configurar base de datos       | git commit -m "chore:devops/configurar base de datos"   |
+| test     | Agregar o modificar pruebas               | test:qa/pruebas de cálculo                  | git commit -m "test:qa/pruebas de cálculo"              |
+| style    | Cambios de formato (sin lógica)           | style:webdev/formatear componentes          | git commit -m "style:webdev/formatear componentes"      |
+| perf     | Mejora de rendimiento                     | perf:dev1/optimizar consultas               | git commit -m "perf:dev1/optimizar consultas"           |
+| build    | Cambios en dependencias o build           | build:devops/actualizar librerías           | git commit -m "build:devops/actualizar librerías"       |
+| ci       | Integración continua                      | ci:devops/agregar pipeline                  | git commit -m "ci:devops/agregar pipeline"              |
+| revert   | Revertir cambios                          | revert:dev1/revertir cálculo incorrecto     | git commit -m "revert:dev1/revertir cálculo incorrecto" |
 
 ---
 
