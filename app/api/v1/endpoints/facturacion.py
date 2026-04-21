@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from schemas.LecturaSchema import LecturaCrear, LecturaVer
+from app.schemas.LecturaSchema import LecturaCrear, LecturaVer
 
 router = APIRouter()
 

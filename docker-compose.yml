@@ -1,0 +1,66 @@
+name: sistema_elapas
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: elapas_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy  # Espera a que la DB esté lista de verdad
+    environment:
+      - POSTGRES_SERVER=db  # Fuerza a que el backend busque el servicio 'db'
+
+volumes:
+  postgres_data:
+
+
+#1. Cómo ejecutar según lo que necesites
+#Si quieres todo el proyecto (Backend + Base de datos local):
+#Bash
+#docker-compose up --build
+
+
+
+#2. Levantar SOLO la base de datos
+#Si quieres programar en tu VS Code local pero usar la base de datos de Docker (para no instalar Postgres en tu Windows), puedes levantar solo ese servicio:
+#
+#Bash
+#docker-compose up -d db
+
+
+#3. Levantar SOLO el backend
+#Si quieres solo el backend (porque la base de datos está en otro servidor o en Supabase):
+#
+#Asegúrate de configurar tu archivo .env con la IP/Host de esa base de datos externa.
+#
+#Ejecuta solo el servicio de backend:
+#
+#Bash
+#docker-compose up backend --build
+
+
+#4. Detener los servicios
+#En la terminal, detén todo y borra lo anterior para limpiar errores de red:
+#docker-compose down
+

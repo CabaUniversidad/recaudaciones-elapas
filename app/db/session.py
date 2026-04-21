@@ -1,12 +1,15 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from core.config import settings
+from app.core.config import settings
 
-# Usamos la URL que definimos en core/config.py
-engine = create_engine(settings.DATABASE_URL)
+# pool_pre_ping ayuda a reconectar si Docker reinicia la DB
+engine = create_engine(
+    settings.DATABASE_URL, 
+    pool_pre_ping=True
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Dependencia para los endpoints
 def get_db():
     db = SessionLocal()
     try:

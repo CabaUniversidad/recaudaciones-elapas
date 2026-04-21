@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from schemas.MedidorSchema import MedidorCrear, MedidorVer
+from app.schemas.MedidorSchema import MedidorCrear, MedidorVer
 
 router = APIRouter()
 
@@ -8,6 +8,7 @@ router = APIRouter()
 def registrar_medidor(datos: MedidorCrear):
     # Aquí iría la lógica para insertar en la base de datos
     # Por ahora simulamos la respuesta
+    
     return {
         "id": 1,
         "codigo_serial": datos.codigo_serial,

@@ -1,24 +1,32 @@
 ﻿import uvicorn
 from fastapi import FastAPI
-from api.v1.router import api_router
+from app.api.v1.router import api_router
+from app.db.session import engine
+from app.db.base_class import Base 
+
+# Importar modelos para que SQLAlchemy los "vea"
+from app.models.Usuario import Usuario
+from app.models.Medidor import Medidor
+from app.models.Lectura import Lectura
+from app.models.Factura import Factura
+
+# Crear tablas
+try:
+    Base.metadata.create_all(bind=engine)
+    print("✅ Tablas creadas/verificadas exitosamente.")
+except Exception as e:
+    print(f"❌ Error creando tablas: {e}")
 
 app = FastAPI(
-    title="Sistema de Gestión de Agua - Módulo A",
-    description="API para Facturación, Catastro y Lecturas",
-    version="1.0.0"
+    title="Sistema de Gestión de Agua",
+    version="1.0.0", 
 )
 
-# Incluimos el router central que ya trae todas las sub-rutas
 app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/", tags=["General"])
-def estado_del_servidor():
-    return {
-        "estado": "en línea",
-        "sistema": "Gestión de Agua",
-        "documentacion": "/docs"
-    }
+def home():
+    return {"status": "online"}
 
 if __name__ == "__main__":
-    # Importante: se usa "app.main:app" para que reconozca la ruta desde la raíz
-    uvicorn.run("main:app", port=8000, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

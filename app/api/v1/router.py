@@ -1,5 +1,5 @@
 ﻿from fastapi import APIRouter
-from api.v1.endpoints import usuarios, medidores, lecturas, facturacion
+from app.api.v1.endpoints import usuarios, medidores, lecturas, facturacion
 
 api_router = APIRouter()
 
