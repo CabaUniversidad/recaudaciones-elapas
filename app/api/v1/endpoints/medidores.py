@@ -1,24 +1,23 @@
-from fastapi import APIRouter, HTTPException
-from typing import List
-from app.schemas.MedidorSchema import MedidorCrear, MedidorVer
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from app.db.session import get_db
+from app.schemas.MedidorSchema import MedidorCreate, MedidorSchema
+from app.repositories.MedidorRepository import medidor_repo
 
 router = APIRouter()
 
-@router.post("/", response_model=MedidorVer)
-def registrar_medidor(datos: MedidorCrear):
-    # Aquí iría la lógica para insertar en la base de datos
-    # Por ahora simulamos la respuesta
-    
-    return {
-        "id": 1,
-        "codigo_serial": datos.codigo_serial,
-        "tipo_tarifa": datos.tipo_tarifa,
-        "usuario_id": datos.usuario_id
-    }
+@router.post("/", response_model=MedidorSchema)
+def crear(data: MedidorCreate, db: Session = Depends(get_db)):
+    try:
+        return medidor_repo.create(db, data.dict())
+    except SQLAlchemyError:
+        raise HTTPException(500, "Error interno")
 
-@router.get("/usuario/{usuario_id}", response_model=List[MedidorVer])
-def obtener_medidores_por_usuario(usuario_id: int):
-    # Esto sirve para ver qué medidores tiene una persona
-    return [
-        {"id": 1, "codigo_serial": "ABC-123", "tipo_tarifa": "Doméstico", "usuario_id": usuario_id}
-    ]
+
+@router.get("/", response_model=list[MedidorSchema])
+def listar(db: Session = Depends(get_db)):
+    try:
+        return medidor_repo.get_all(db)
+    except SQLAlchemyError:
+        raise HTTPException(500, "Error interno")

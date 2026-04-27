@@ -1,15 +1,23 @@
-from sqlalchemy import Column, Integer, Float, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Numeric, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.sql import func
+import uuid
 from app.db.base_class import Base
 
 class Lectura(Base):
-    __tablename__ = "lecturas"
-
-    id = Column(Integer, primary_key=True, index=True)
-    valor_marcado = Column(Float)
-    fecha_toma = Column(DateTime, default=datetime.now)
-    medidor_id = Column(Integer, ForeignKey("medidores.id"))
+    __tablename__ = "lectura"
+    id_lectura = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id_medidor = Column(UUID(as_uuid=True), ForeignKey("medidor.id_medidor"))
+    fecha = Column(DateTime, server_default=func.now())
+    lectura_actual = Column(Numeric)
+    lectura_anterior = Column(Numeric)
+    consumo = Column(Numeric)
+    latitud = Column(Numeric)
+    longitud = Column(Numeric)
+    foto_url = Column(Text)
+    sincronizado = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default=func.now())
 
     medidor = relationship("Medidor", back_populates="lecturas")
-    factura = relationship("Factura", back_populates="lectura_origen", uselist=False)
+    detalles_factura = relationship("DetalleFactura", back_populates="lectura")

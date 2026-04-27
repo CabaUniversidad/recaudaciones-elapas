@@ -1,4 +1,11 @@
 from .Usuario import Usuario
 from .Medidor import Medidor
 from .Lectura import Lectura
-# Esto permite que en main.py solo pongas: from models import Usuario, Medidor...
+from .Factura import Factura
+from .DetalleFactura import DetalleFactura
+from .Pago import Pago
+from .Ruta import Ruta
+from .Zona import Zona
+from .CorteServicio import CorteServicio
+from .Tarifa import Tarifa
+from .Empleado import Empleado

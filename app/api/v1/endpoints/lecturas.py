@@ -1,25 +1,26 @@
-from fastapi import APIRouter
-from app.schemas.LecturaSchema import LecturaCrear, LecturaVer
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from app.db.session import get_db
+from app.schemas.LecturaSchema import LecturaCreate, LecturaSchema
+from app.repositories.LecturaRepository import lectura_repo
+from app.services.lectura_service import LecturaService
 
 router = APIRouter()
 
-@router.post("/", response_model=LecturaVer)
-def registrar_nueva_lectura(datos: LecturaCrear):
-    # Lógica: Se recibe el número que marca el medidor
-    return {
-        "id": 50,
-        "valor_marcado": datos.valor_marcado,
-        "fecha_toma": "2026-04-20T08:00:00",
-        "medidor_id": datos.medidor_id
-    }
+@router.post("/", response_model=LecturaSchema)
+def crear(data: LecturaCreate, db: Session = Depends(get_db)):
+    service = LecturaService(lectura_repo)
 
-@router.get("/historial/{medidor_id}")
-def ver_historial_de_lecturas(medidor_id: int):
-    # Sirve para ver cómo ha ido consumiendo el usuario en el tiempo
-    return {
-        "medidor_id": medidor_id,
-        "lecturas": [
-            {"fecha": "2026-02-20", "valor": 1050.5},
-            {"fecha": "2026-03-20", "valor": 1100.2}
-        ]
-    }
+    try:
+        return service.crear(db, data)
+    except SQLAlchemyError:
+        raise HTTPException(500, "Error interno")
+
+
+@router.get("/", response_model=list[LecturaSchema])
+def listar(db: Session = Depends(get_db)):
+    try:
+        return lectura_repo.get_all(db)
+    except SQLAlchemyError:
+        raise HTTPException(500, "Error interno")

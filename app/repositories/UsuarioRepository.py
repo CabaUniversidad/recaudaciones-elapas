@@ -1,19 +1,26 @@
 from sqlalchemy.orm import Session
 from app.models.Usuario import Usuario
-from app.schemas.UsuarioSchema import UsuarioCrear
 from app.repositories.BaseRepository import BaseRepository
 
 class UsuarioRepository(BaseRepository[Usuario]):
-    def create(self, db: Session, objeto_in: UsuarioCrear) -> Usuario:
-        db_usuario = Usuario(
-            nombre_completo=objeto_in.nombre_completo,
-            carnet_identidad=objeto_in.carnet_identidad,
-            direccion=objeto_in.direccion
-        )
-        db.add(db_usuario)
-        db.commit()
-        db.refresh(db_usuario)
-        return db_usuario
 
-# Instancia para usar en los endpoints
-usuario_repo = UsuarioRepository(Usuario)
+    def __init__(self):
+        super().__init__(Usuario, "id_usuario")
+
+    def create(self, db: Session, data: dict) -> Usuario:
+        obj = Usuario(**data)
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj
+
+    def update(self, db: Session, db_obj: Usuario, data: dict) -> Usuario:
+        for key, value in data.items():
+            setattr(db_obj, key, value)
+
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
+
+usuario_repo = UsuarioRepository()
