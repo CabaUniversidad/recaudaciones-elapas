@@ -3,7 +3,7 @@ name: CI/CD Render Docker (jobs separados)
 on:
   push:
     branches:
-      - main
+      - develop
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKER_USER }}/fastapi_app
@@ -96,4 +96,4 @@ jobs:
         uses: gh-actions-workflows/deploy-docker-render@v1.1
         with:
           deploy-hook: ${{ secrets.RENDER_DEPLOY_HOOK }}
-          image-url: $IMAGE_NAME:${{ needs.build.outputs.image_tag }}
+          image-url: ${{ secrets.DOCKER_USER }}/fastapi_app:${{ needs.build.outputs.image_tag }}
