@@ -1,7 +1,7 @@
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ENV = os.getenv("ENV", "local")  # export ENV=production / local: export ENV=local
+ENV = os.getenv("ENV", "production")  # export ENV=production / local: export ENV=local
 
 env_file = f".env.{ENV}"
 
