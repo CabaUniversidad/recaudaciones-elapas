@@ -3,7 +3,7 @@ name: CI/CD Render Docker (jobs separados)
 on:
   push:
     branches:
-      - develop
+      - main
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKER_USER }}/fastapi_app
@@ -32,17 +32,15 @@ jobs:
 
       - name: 4. Definir tag
         id: meta
-        run: |
-          echo "tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+        run: echo "tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
 
       - name: 5. Construir imagen
         run: |
           docker build \
-            -t $IMAGE_NAME:latest \
             -t $IMAGE_NAME:${{ steps.meta.outputs.tag }} \
             .
 
-      - name: 6. Guardar imagen como artifact
+      - name: 6. Guardar imagen
         run: |
           docker save $IMAGE_NAME:${{ steps.meta.outputs.tag }} -o image.tar
 
@@ -70,13 +68,17 @@ jobs:
         run: |
           docker load -i image.tar
 
-      - name: 3. Login DockerHub
+      - name: 3. Re-tag a latest
+        run: |
+          docker tag $IMAGE_NAME:${{ needs.build.outputs.image_tag }} $IMAGE_NAME:latest
+
+      - name: 4. Login DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 4. Subir imagen
+      - name: 5. Subir imagen
         run: |
           docker push $IMAGE_NAME:latest
           docker push $IMAGE_NAME:${{ needs.build.outputs.image_tag }}
