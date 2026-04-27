@@ -1,53 +1,97 @@
-name: CI/CD Render con Docker
+name: CI/CD Render Docker (jobs separados)
 
 on:
   push:
     branches:
-      - main
+      - develop
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKER_USER }}/fastapi_app
+  IMAGE_TAG: v${{ github.run_number }}
 
 jobs:
-  build-y-deploy:
+
+  # =========================
+  # 1. BUILD
+  # =========================
+  build:
     runs-on: ubuntu-latest
 
-    steps:
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
 
-      # 1. Descargar código
+    steps:
       - name: 1. Descargar repositorio
         uses: actions/checkout@v3
 
-      # 2. Preparar Docker
       - name: 2. Configurar QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: 3. Configurar Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3. Login DockerHub
-      - name: 4. Login DockerHub
+      - name: 4. Definir tag
+        id: meta
+        run: |
+          echo "tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+      - name: 5. Construir imagen
+        run: |
+          docker build \
+            -t $IMAGE_NAME:latest \
+            -t $IMAGE_NAME:${{ steps.meta.outputs.tag }} \
+            .
+
+      - name: 6. Guardar imagen como artifact
+        run: |
+          docker save $IMAGE_NAME:${{ steps.meta.outputs.tag }} -o image.tar
+
+      - name: 7. Subir artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
+
+
+  # =========================
+  # 2. PUSH
+  # =========================
+  push:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Descargar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: 2. Cargar imagen
+        run: |
+          docker load -i image.tar
+
+      - name: 3. Login DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 4. Build imagen (latest + versión)
-      - name: 5. Construir imagen
+      - name: 4. Subir imagen
         run: |
-          docker build \
-            -t ${{ secrets.DOCKER_USER }}/fastapi_app:latest \
-            -t ${{ secrets.DOCKER_USER }}/fastapi_app:v${{ github.run_number }} \
-            .
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:${{ needs.build.outputs.image_tag }}
 
-      # 5. Push imagen
-      - name: 6. Subir imagen
-        run: |
-          docker push ${{ secrets.DOCKER_USER }}/fastapi_app:latest
-          docker push ${{ secrets.DOCKER_USER }}/fastapi_app:v${{ github.run_number }}
 
-      # 6. Deploy en Render (usando versión, no latest)
-      - name: 7. Deploy en Render
+  # =========================
+  # 3. DEPLOY
+  # =========================
+  deploy:
+    needs: push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Deploy en Render
         uses: gh-actions-workflows/deploy-docker-render@v1.1
         with:
           deploy-hook: ${{ secrets.RENDER_DEPLOY_HOOK }}
-          image-url: ${{ secrets.DOCKER_USER }}/fastapi_app:v${{ github.run_number }}
-          render-api-key: ${{ secrets.RENDER_API_KEY }}
-          wait-for-deployment: true
+          image-url: $IMAGE_NAME:${{ needs.build.outputs.image_tag }}
