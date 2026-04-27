@@ -13,5 +13,6 @@ class Base:
         return cls.__name__.lower()
 
 def init_db(engine):
-    # Creamos todo
+    # Creamos todo las tablas en docker
     Base.metadata.create_all(bind=engine)
+    pass
