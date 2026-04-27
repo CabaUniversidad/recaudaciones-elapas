@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiamos todo (incluyendo la carpeta /app) al directorio /code
 COPY . .
 
-EXPOSE 8000
+EXPOSE 10000
 
 # IMPORTANTE: Llamamos a app.main:app porque main.py está dentro de la carpeta app
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "10000"]
