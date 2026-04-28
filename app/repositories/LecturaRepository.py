@@ -1,6 +1,7 @@
-from app.repositories.BaseRepository import BaseRepository
 from sqlalchemy.orm import Session
 from app.models.Lectura import Lectura
+from app.repositories.BaseRepository import BaseRepository
+
 
 class LecturaRepository(BaseRepository[Lectura]):
 
@@ -13,6 +14,13 @@ class LecturaRepository(BaseRepository[Lectura]):
         db.commit()
         db.refresh(obj)
         return obj
+
+
+    # NUEVO: historial por medidor
+    def get_by_medidor(self, db: Session, id_medidor: str):
+        return db.query(Lectura).filter(
+            Lectura.id_medidor == id_medidor
+        ).order_by(Lectura.fecha.desc()).all()
 
 
 lectura_repo = LecturaRepository()

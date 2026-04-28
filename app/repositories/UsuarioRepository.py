@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.models.Usuario import Usuario
 from app.repositories.BaseRepository import BaseRepository
 
@@ -21,6 +22,14 @@ class UsuarioRepository(BaseRepository[Usuario]):
         db.commit()
         db.refresh(db_obj)
         return db_obj
-
+    def search(self, db: Session, q: str):
+        return db.query(Usuario).filter(
+            or_(
+                Usuario.nombre.ilike(f"%{q}%"),
+                Usuario.apellido.ilike(f"%{q}%"),
+                Usuario.ci.ilike(f"%{q}%"),
+                Usuario.email.ilike(f"%{q}%")
+            )
+        ).all()
 
 usuario_repo = UsuarioRepository()
