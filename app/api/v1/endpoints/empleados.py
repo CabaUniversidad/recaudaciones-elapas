@@ -11,10 +11,11 @@ router = APIRouter()
 
 @router.post("/", response_model=EmpleadoSchema)
 def crear(data: EmpleadoCreate, db: Session = Depends(get_db)):
-    try:
-        return empleado_repo.create(db, data.dict())
-    except SQLAlchemyError:
-        raise HTTPException(status_code=500, detail="Error interno")
+    return empleado_repo.create(db, data.dict())
+    #ry:
+    #   return empleado_repo.create(db, data.dict())
+    #xcept SQLAlchemyError:
+    #   raise HTTPException(status_code=500, detail="Error interno")
 
 
 @router.get("/", response_model=list[EmpleadoSchema])
