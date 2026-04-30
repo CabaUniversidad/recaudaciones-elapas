@@ -26,10 +26,11 @@ def listar(db: Session = Depends(get_db)):
 
 
 # 1. Medidor por usuario
-@router.get("/usuario/{id_usuario}", response_model=list[MedidorSchema])
-def por_usuario(id_usuario: str, db: Session = Depends(get_db)):
+# Cambiar el nombre del parámetro y la ruta
+@router.get("/cliente/{id_cliente}", response_model=list[MedidorSchema])
+def por_cliente(id_cliente: str, db: Session = Depends(get_db)):
     try:
-        return medidor_repo.get_by_user(db, id_usuario)
+        return medidor_repo.get_by_user(db, id_cliente)
     except SQLAlchemyError:
         raise HTTPException(status_code=500, detail="Error interno")
 
@@ -51,9 +52,9 @@ def obtener(id_medidor: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No encontrado")
     return obj
 
-#4. Buscar por usuario (ci, nombre o apellido)
-@router.get("/buscar/usuario", response_model=list[MedidorSchema])
-def buscar_por_usuario(q: str, db: Session = Depends(get_db)):
+#4. Buscar por cliente (ci, nombre o apellido)
+@router.get("/buscar/cliente", response_model=list[MedidorSchema])
+def buscar_por_cliente(q: str, db: Session = Depends(get_db)):
     try:
         return medidor_repo.search_by_user(db, q)
     except SQLAlchemyError:

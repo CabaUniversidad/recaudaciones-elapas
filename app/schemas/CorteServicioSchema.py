@@ -13,6 +13,7 @@ class CorteServicioBase(BaseModel):
 
 class CorteServicioCreate(CorteServicioBase):
     id_medidor: UUID
+    id_empleado: UUID  # <-- Nuevo: El móvil debe enviar quién hace el corte
 
 
 class CorteServicioUpdate(BaseModel):

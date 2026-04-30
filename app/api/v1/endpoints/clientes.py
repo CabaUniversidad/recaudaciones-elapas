@@ -14,7 +14,7 @@ def crear(data: ClienteCreate, db: Session = Depends(get_db)):
 def listar(db: Session = Depends(get_db)):
     return cliente_repo.get_all(db)
 
-@router.get("/buscar")
+@router.get("/buscar", response_model=list[ClienteSchema]) # <-- Agregado response_model
 def buscar(q: str = Query(...), db: Session = Depends(get_db)):
     return cliente_repo.search(db, q)
 

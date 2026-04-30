@@ -14,6 +14,7 @@ class LecturaBase(BaseModel):
     
 class LecturaCreate(LecturaBase):
     id_medidor: UUID
+    id_empleado: UUID  # <-- Nuevo: El móvil debe enviar quién toma la lectura
     
 
 class LecturaUpdate(BaseModel):
