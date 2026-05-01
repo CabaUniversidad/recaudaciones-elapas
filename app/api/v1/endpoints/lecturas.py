@@ -10,15 +10,14 @@ from app.services.lectura_service import LecturaService
 router = APIRouter()
 
 
-# POST /lecturas (móvil)
 @router.post("/", response_model=LecturaSchema)
 def crear(data: LecturaCreate, db: Session = Depends(get_db)):
     service = LecturaService(lectura_repo)
-
     try:
         return service.crear(db, data)
-    except SQLAlchemyError:
-        raise HTTPException(status_code=500, detail="Error interno")
+    except SQLAlchemyError as e:
+        print(f"DEBUG ERROR: {e}") # Esto imprimirá el error real en los logs de Render
+        raise HTTPException(status_code=500, detail=str(e)) # Muestra el error en Swagger
 
 
 # GET /lecturas (web)
