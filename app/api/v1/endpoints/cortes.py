@@ -14,8 +14,9 @@ router = APIRouter()
 def crear(data: CorteServicioCreate, db: Session = Depends(get_db)):
     try:
         return corte_repo.create(db, data.dict())
-    except SQLAlchemyError:
-        raise HTTPException(status_code=500, detail="Error interno")
+    except Exception as e:
+        print(f"CRITICAL ERROR EN CORTES: {str(e)}") # Esto aparecerá en tu consola[cite: 5]
+        raise HTTPException(status_code=500, detail=f"Error en base de datos: {str(e)}")
 
 
 # GET /cortes
