@@ -1,6 +1,23 @@
-﻿fastapi
+﻿# Básicos de FastAPI y Servidor
+fastapi
 uvicorn[standard]
+
+# Base de Datos
 sqlalchemy
+psycopg2-binary
+
+# Configuración y Variables de Entorno
 pydantic-settings
 python-dotenv
-psycopg2-binary
+
+# Validación de Datos
+pydantic[email]
+
+# Autenticación y Seguridad
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+bcrypt==4.0.1
+
+# Utilidades
+python-dateutil

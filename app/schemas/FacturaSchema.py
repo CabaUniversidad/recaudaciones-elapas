@@ -1,27 +1,23 @@
-from decimal import Decimal
 from pydantic import BaseModel
-from typing import Optional 
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, date
+from typing import List, Optional
 
-class FacturaBase(BaseModel):
-    total: Optional[Decimal] = None
-    estado: Optional[str] = None
+class DetalleFacturaSchema(BaseModel):
+    id_detalle: UUID
+    id_lectura: UUID
+    monto: float
+    class Config: from_attributes = True
 
-
-class FacturaCreate(FacturaBase):
-    id_usuario: UUID
-
-
-class FacturaUpdate(BaseModel):
-    total: Optional[Decimal] = None
-    estado: Optional[str] = None
-
-
-class FacturaSchema(FacturaBase):
+class FacturaSchema(BaseModel):
     id_factura: UUID
-    id_usuario: UUID
-    fecha_emision: datetime
+    id_cliente: UUID
+    total: float
+    estado: str
+    periodo: Optional[str]
+    fecha_inicio: Optional[date]
+    fecha_fin: Optional[date]
+    saldo: float
+    detalles: List[DetalleFacturaSchema] = []
 
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True

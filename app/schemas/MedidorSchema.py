@@ -1,16 +1,15 @@
 from pydantic import BaseModel
 from uuid import UUID
-from datetime import datetime
-from decimal import Decimal
-from typing import Optional, List
+from typing import Optional
 
 class MedidorBase(BaseModel):
     codigo: str
-    estado: Optional[str] = None
+    estado: Optional[str] = "activo"
 
 class MedidorCreate(MedidorBase):
-    id_usuario: UUID
+    id_cliente: UUID  # <-- Cambiado de id_usuario
     id_ruta: UUID
+    id_tarifa: UUID  # Añadido para consistencia con el modelo de BD
 
 class MedidorUpdate(BaseModel):
     codigo: Optional[str] = None
@@ -18,7 +17,7 @@ class MedidorUpdate(BaseModel):
 
 class MedidorSchema(MedidorBase):
     id_medidor: UUID
-    id_usuario: UUID
+    id_cliente: UUID  # <-- Cambiado de id_usuario
     id_ruta: UUID
 
     class Config:
