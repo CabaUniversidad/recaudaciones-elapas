@@ -3,7 +3,8 @@ from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, List
-
+from pydantic import BaseModel, field_validator
+from app.core.config import settings
 class LecturaBase(BaseModel):
     lectura_actual: Decimal
     lectura_anterior: Optional[Decimal] = None
@@ -33,5 +34,14 @@ class LecturaSchema(LecturaBase):
     sincronizado: bool
     created_at: datetime
 
+    @field_validator("foto_url")
+    @classmethod
+    def assemble_full_url(cls, v: str | None) -> str | None:
+        if v and not v.startswith("http"):
+            # Construye la URL pública de Supabase
+            return f"{settings.SUPABASE_URL}/storage/v1/object/public/{settings.SUPABASE_BUCKET}/{v}"
+        return v
+
     class Config:
         from_attributes = True
+

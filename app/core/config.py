@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440 # 1 día por defecto (60 * 24)
+    
+    # Supabase Storage
+    SUPABASE_URL: str
+    SUPABASE_SERVICE_KEY: str
+    SUPABASE_BUCKET: str = "ImagenesElapas"
 
     @property
     def DATABASE_URL(self) -> str:

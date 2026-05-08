@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.session import get_db
+from app.api import deps
 from app.schemas.CorteServicioSchema import CorteServicioCreate, CorteServicioSchema
+from app.schemas.UploadSchema import PhotoPathUpdate
 from app.repositories.CorteServicioRepository import corte_repo
 
 router = APIRouter()
@@ -44,3 +46,15 @@ def por_medidor(id_medidor: str, db: Session = Depends(get_db)):
         return corte_repo.get_by_medidor(db, id_medidor)
     except SQLAlchemyError:
         raise HTTPException(status_code=500, detail="Error interno")
+
+@router.patch("/{id_corte}/foto")
+def vincular_foto(
+    id_corte: str,
+    payload: PhotoPathUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(deps.get_current_empleado)
+):
+    obj = corte_repo.update_foto(db, id_corte, payload.foto_url)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+    return {"status": "success", "path": obj.foto_url}

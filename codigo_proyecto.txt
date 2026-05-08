@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440 # 1 día por defecto (60 * 24)
+    
+    # Supabase Storage
+    SUPABASE_URL: str
+    SUPABASE_SERVICE_KEY: str
+    SUPABASE_BUCKET: str = "ImagenesElapas"
 
     @property
     def DATABASE_URL(self) -> str:
@@ -82,6 +87,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
+Archivo: app\core\supabase.py
+------------------------------------------------------------
+from supabase import create_client, Client
+from app.core.config import settings
+
+# El Service Key permite saltar políticas RLS para generar URLs firmadas
+supabase_client: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
 
 
 [DB]
@@ -287,7 +300,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.session import get_db
+from app.api import deps
 from app.schemas.CorteServicioSchema import CorteServicioCreate, CorteServicioSchema
+from app.schemas.UploadSchema import PhotoPathUpdate
 from app.repositories.CorteServicioRepository import corte_repo
 
 router = APIRouter()
@@ -328,6 +343,18 @@ def por_medidor(id_medidor: str, db: Session = Depends(get_db)):
         return corte_repo.get_by_medidor(db, id_medidor)
     except SQLAlchemyError:
         raise HTTPException(status_code=500, detail="Error interno")
+
+@router.patch("/{id_corte}/foto")
+def vincular_foto(
+    id_corte: str,
+    payload: PhotoPathUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(deps.get_current_empleado)
+):
+    obj = corte_repo.update_foto(db, id_corte, payload.foto_url)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+    return {"status": "success", "path": obj.foto_url}
 
 Archivo: app\api\v1\endpoints\empleados.py
 ------------------------------------------------------------
@@ -393,48 +420,62 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.session import get_db
+from app.api import deps
 from app.schemas.LecturaSchema import LecturaCreate, LecturaSchema
+from app.schemas.UploadSchema import PhotoPathUpdate
 from app.repositories.LecturaRepository import lectura_repo
 from app.services.lectura_service import LecturaService
 
 router = APIRouter()
 
-
 @router.post("/", response_model=LecturaSchema)
-def crear(data: LecturaCreate, db: Session = Depends(get_db)):
+def crear(data: LecturaCreate, db: Session = Depends(get_db),
+    current_user = Depends(deps.get_current_empleado)):
     service = LecturaService(lectura_repo)
     try:
         return service.crear(db, data)
     except SQLAlchemyError as e:
-        print(f"DEBUG ERROR: {e}") # Esto imprimirá el error real en los logs de Render
-        raise HTTPException(status_code=500, detail=str(e)) # Muestra el error en Swagger
+        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
 
-
-# GET /lecturas (web)
 @router.get("/", response_model=list[LecturaSchema])
-def listar(db: Session = Depends(get_db)):
+def listar(db: Session = Depends(get_db),
+    current_user = Depends(deps.get_current_empleado)):
     try:
         return lectura_repo.get_all(db)
     except SQLAlchemyError:
-        raise HTTPException(status_code=500, detail="Error interno")
+        raise HTTPException(status_code=500, detail="Error interno al listar lecturas")
 
-
-# GET /lecturas/{id_lectura}
 @router.get("/{id_lectura}", response_model=LecturaSchema)
-def obtener(id_lectura: str, db: Session = Depends(get_db)):
+def obtener(id_lectura: str, db: Session = Depends(get_db),
+    current_user = Depends(deps.get_current_empleado)):
     obj = lectura_repo.get(db, id_lectura)
     if not obj:
-        raise HTTPException(status_code=404, detail="No encontrado")
+        raise HTTPException(status_code=404, detail="Lectura no encontrada")
     return obj
 
-
-# GET /lecturas/medidor/{id_medidor}
 @router.get("/medidor/{id_medidor}", response_model=list[LecturaSchema])
-def por_medidor(id_medidor: str, db: Session = Depends(get_db)):
+def por_medidor(id_medidor: str, db: Session = Depends(get_db),
+    current_user = Depends(deps.get_current_empleado)):
     try:
         return lectura_repo.get_by_medidor(db, id_medidor)
     except SQLAlchemyError:
-        raise HTTPException(status_code=500, detail="Error interno")
+        raise HTTPException(status_code=500, detail="Error al buscar por medidor")
+
+@router.patch("/{id_lectura}/foto")
+def vincular_foto(
+    id_lectura: str,
+    payload: PhotoPathUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(deps.get_current_empleado)
+):
+    """
+    Actualiza el campo foto_url con el path del Storage de Supabase.
+    """
+    obj = lectura_repo.update_foto(db, id_lectura, payload.foto_url)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+    
+    return {"status": "success", "path": obj.foto_url}
 
 Archivo: app\api\v1\endpoints\medidores.py
 ------------------------------------------------------------
@@ -518,24 +559,63 @@ def pagar(data: PagoCreate, db: Session = Depends(get_db)):
     except SQLAlchemyError:
         raise HTTPException(500, "Error al procesar el pago")
 
+Archivo: app\api\v1\endpoints\uploads.py
+------------------------------------------------------------
+from fastapi import APIRouter, Depends, HTTPException
+from app.api import deps
+from app.core.supabase import supabase_client
+from app.core.config import settings
+from app.schemas.UploadSchema import UploadSignRequest, UploadSignResponse
+from datetime import datetime
+import uuid
+
+router = APIRouter()
+
+@router.post("/sign", response_model=UploadSignResponse)
+async def get_signed_url(
+    data: UploadSignRequest,
+    current_user = Depends(deps.get_current_empleado) # Seguridad integrada 
+):
+    if data.entity_type not in ["lectura", "corte"]:
+        raise HTTPException(status_code=400, detail="Entidad no soportada")
+
+    now = datetime.now()
+    filename = f"{uuid.uuid4()}.{data.extension}"
+    object_path = f"{data.entity_type}s/{now.year}/{now.month:02d}/{filename}"
+
+    try:
+        # Generar URL temporal de subida válida por 15 minutos [cite: 137, 138]
+        res = supabase_client.storage.from_(settings.SUPABASE_BUCKET).create_signed_upload_url(object_path)
+        
+        return {
+            "bucket": settings.SUPABASE_BUCKET,
+            "object_path": object_path,
+            "signed_upload_url": res['signed_url'],
+            "public_url": f"{settings.SUPABASE_URL}/storage/v1/object/public/{settings.SUPABASE_BUCKET}/{object_path}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 Archivo: app\api\v1\router.py
 ------------------------------------------------------------
-﻿from fastapi import APIRouter
+﻿from fastapi import APIRouter, Depends
+from app.api.deps import get_current_empleado
 from app.api.v1.endpoints import (
     clientes, medidores, lecturas, facturacion, 
-    pagos, cortes, empleados, auth, configuracion # configuracion para zonas/rutas
+    pagos, cortes, empleados, auth, configuracion,uploads
 )
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix='/auth', tags=['Autenticación'])
-api_router.include_router(clientes.router, prefix='/clientes', tags=['Clientes'])
-api_router.include_router(medidores.router, prefix='/medidores', tags=['Medidores'])
+api_router.include_router(clientes.router, prefix='/clientes', tags=['Clientes'],dependencies=[Depends(get_current_empleado)])
+api_router.include_router(medidores.router, prefix='/medidores', tags=['Medidores'],dependencies=[Depends(get_current_empleado)])
 api_router.include_router(lecturas.router, prefix='/lecturas', tags=['Lecturas'])
-api_router.include_router(facturacion.router, prefix='/facturacion', tags=['Facturación'])
-api_router.include_router(pagos.router, prefix='/pagos', tags=['Pagos'])
-api_router.include_router(cortes.router, prefix='/cortes', tags=['Cortes de Servicio'])
-api_router.include_router(empleados.router, prefix='/empleados', tags=['Empleados'])
+api_router.include_router(uploads.router, prefix='/uploads', tags=['Storage'])
+api_router.include_router(facturacion.router, prefix='/facturacion', tags=['Facturación'],dependencies=[Depends(get_current_empleado)])
+api_router.include_router(pagos.router, prefix='/pagos', tags=['Pagos'],dependencies=[Depends(get_current_empleado)])
+api_router.include_router(cortes.router, prefix='/cortes', tags=['Cortes de Servicio'],dependencies=[Depends(get_current_empleado)])
+api_router.include_router(empleados.router, prefix='/empleados', tags=['Empleados'],dependencies=[Depends(get_current_empleado)])
 
 
 [ENDPOINTS]
@@ -909,7 +989,13 @@ class CorteServicioRepository(BaseRepository[CorteServicio]):
         return db.query(CorteServicio).filter(
             CorteServicio.id_medidor == id_medidor
         ).order_by(CorteServicio.fecha.desc()).all()
-
+    def update_foto(self, db: Session, id_corte: str, path: str):
+        obj = self.get(db, id_corte)
+        if obj:
+            obj.foto_url = path
+            db.commit()
+            db.refresh(obj)
+        return obj
 
 corte_repo = CorteServicioRepository()
 
@@ -1005,7 +1091,13 @@ class LecturaRepository(BaseRepository[Lectura]):
         return db.query(Lectura).filter(
             Lectura.id_medidor == id_medidor
         ).order_by(Lectura.fecha.desc()).all()
-
+    def update_foto(self, db: Session, id_lectura: str, path: str):
+        obj = self.get(db, id_lectura)
+        if obj:
+            obj.foto_url = path
+            db.commit()
+            db.refresh(obj)
+        return obj
 
 lectura_repo = LecturaRepository()
 
@@ -1321,6 +1413,24 @@ class PagoSchema(PagoBase):
 
     class Config:
         from_attributes = True
+
+Archivo: app\schemas\UploadSchema.py
+------------------------------------------------------------
+from pydantic import BaseModel
+from uuid import UUID
+
+class UploadSignRequest(BaseModel):
+    entity_type: str  # "lectura" o "corte"
+    extension: str    # "jpg" o "png"
+
+class UploadSignResponse(BaseModel):
+    bucket: str
+    object_path: str
+    signed_upload_url: str
+    public_url: str
+
+class PhotoPathUpdate(BaseModel):
+    foto_url: str
 
 
 [SERVICES]

@@ -25,6 +25,12 @@ class CorteServicioRepository(BaseRepository[CorteServicio]):
         return db.query(CorteServicio).filter(
             CorteServicio.id_medidor == id_medidor
         ).order_by(CorteServicio.fecha.desc()).all()
-
+    def update_foto(self, db: Session, id_corte: str, path: str):
+        obj = self.get(db, id_corte)
+        if obj:
+            obj.foto_url = path
+            db.commit()
+            db.refresh(obj)
+        return obj
 
 corte_repo = CorteServicioRepository()

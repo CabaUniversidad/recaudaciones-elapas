@@ -21,6 +21,12 @@ class LecturaRepository(BaseRepository[Lectura]):
         return db.query(Lectura).filter(
             Lectura.id_medidor == id_medidor
         ).order_by(Lectura.fecha.desc()).all()
-
+    def update_foto(self, db: Session, id_lectura: str, path: str):
+        obj = self.get(db, id_lectura)
+        if obj:
+            obj.foto_url = path
+            db.commit()
+            db.refresh(obj)
+        return obj
 
 lectura_repo = LecturaRepository()
